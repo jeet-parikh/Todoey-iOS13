@@ -6,11 +6,9 @@
 //  Copyright (c) 2015 London App Brewery. All rights reserved.
 //
 
-//Hopefully this work!
 
 import UIKit
 
-i am messing things up
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
