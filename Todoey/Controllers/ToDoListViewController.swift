@@ -8,8 +8,9 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
-class ToDoListViewController: UITableViewController {
+class ToDoListViewController: SwipeTableViewController {
     
     var todoItems : Results<Item>?
     
@@ -26,6 +27,7 @@ class ToDoListViewController: UITableViewController {
         
         print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
         
+        tableView.separatorStyle = .none
         
     }
     //MARK: - TableView Datasource Methods
@@ -35,10 +37,16 @@ class ToDoListViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
         if let item = todoItems?[indexPath.row] {
+            
             cell.textLabel?.text = item.title
+            if let color = UIColor(hexString: selectedCategory!.hexColor)?.darken(byPercentage: CGFloat(indexPath.row) / CGFloat(todoItems!.count)){
+                
+                cell.backgroundColor = color
+                cell.textLabel?.textColor = ContrastColorOf(color, returnFlat: true)
+            }
             
             //Ternary operator ==>
             //value = condition ? valueIfTrue : valueIfFalse
@@ -116,7 +124,23 @@ class ToDoListViewController: UITableViewController {
         tableView.reloadData()
     }
     
+    // MARK: - Delete items from superclass
+    
+    override func updateModel(at indexPath: IndexPath) {
+        if let itemForDeletion = self.todoItems?[indexPath.row] {
+            do {
+                try self.realm.write {
+                    self.realm.delete(itemForDeletion)
+                }
+            } catch {
+                print("Error deleting item: \(error)")
+            }
+        }
+    }
+    
 }
+
+
 //MARK: - SearchBar Delegate Methods
 
 extension ToDoListViewController: UISearchBarDelegate {

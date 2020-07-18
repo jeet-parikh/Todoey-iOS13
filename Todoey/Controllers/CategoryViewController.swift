@@ -8,8 +8,9 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
-class CategoryViewController: UITableViewController {
+class CategoryViewController: SwipeTableViewController {
     
     let realm = try! Realm()
     
@@ -18,6 +19,8 @@ class CategoryViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         loadCategories()
+        tableView.separatorStyle = .none
+        
     }
     
     // MARK: - TableView Datasource Methods
@@ -30,9 +33,11 @@ class CategoryViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
         cell.textLabel?.text = categories?[indexPath.row].name ?? "No Categories Added Yet"
+        
+        cell.backgroundColor = UIColor(hexString: categories?[indexPath.row].hexColor ?? "1D9BF6")
         
         return cell
         
@@ -49,32 +54,47 @@ class CategoryViewController: UITableViewController {
         let destinationVC = segue.destination as! ToDoListViewController
         if let indexPath = tableView.indexPathForSelectedRow {
             destinationVC.selectedCategory = categories?[indexPath.row]
-
+            
         }
     }
     
     // MARK: - Data Manipulation Methods
-
-        func save(category: Category) {
+    
+    func save(category: Category) {
+        do {
+            try realm.write {
+                realm.add(category)
+            }
+        } catch {
+            print("Error saving context: \(error)")
+        }
+        tableView.reloadData()
+    }
+    
+    func loadCategories() {
+        
+        categories = realm.objects(Category.self).sorted(byKeyPath: "dateCreated", ascending: true)
+        
+        tableView.reloadData()
+        
+    }
+    
+    
+    // MARK: - Delete Data from Swipe
+    
+    override func updateModel(at indexPath: IndexPath) {
+        if let categoryForDeletion = self.categories?[indexPath.row] {
             do {
-                try realm.write {
-                    realm.add(category)
+                try self.realm.write {
+                    self.realm.delete(categoryForDeletion)
                 }
             } catch {
-                print("Error saving context: \(error)")
+                print("Error deleting category: \(error)")
             }
-            tableView.reloadData()
         }
-
-        func loadCategories() {
-            
-            categories = realm.objects(Category.self).sorted(byKeyPath: "dateCreated", ascending: true)
-            
-            tableView.reloadData()
-            
-        }
-        
-
+    }
+    
+    
     // MARK: - Add New Categories
     
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
@@ -91,6 +111,8 @@ class CategoryViewController: UITableViewController {
             
             newCategory.dateCreated = Date()
             
+            newCategory.hexColor = UIColor.randomFlat().hexValue()
+            
             self.save(category: newCategory)
         }
         
@@ -106,4 +128,3 @@ class CategoryViewController: UITableViewController {
     
 }
 
-    
